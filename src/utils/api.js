@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://1.234.83.86:5000';  // HTTPS로 변경
+const API_URL = 'https://moray-leading-jolly.ngrok-free.app';  // ngrok URL로 변경
 
 const api = axios.create({
   baseURL: API_URL,
