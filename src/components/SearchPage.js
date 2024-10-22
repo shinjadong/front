@@ -13,6 +13,7 @@ function SearchPage() {
       setProducts(result.products);
     } catch (error) {
       console.error('검색 실패:', error);
+      alert(error.response?.data?.error || '검색 중 오류가 발생했습니다. 자세한 내용: ' + error.message);
     }
   };
 

@@ -50,7 +50,7 @@ function CollectedProducts() {
       alert('헤이셀러 파일이 다운로드되었습니다.');
     } catch (error) {
       console.error('헤이셀러 다운로드 실패:', error);
-      alert('헤이셀러 다운로드 중 오류가 발생했습니다.');
+      alert(error.response?.data?.error || '헤이셀러 다운로드 중 오류가 발생했습니다. 자세한 내용: ' + error.message);
     }
   };
 
@@ -124,6 +124,13 @@ function CollectedProducts() {
                 <td>
                   <button onClick={() => handleGenerateSEO(product.id)}>
                     SEO 생성
+                  </button>
+                </td>
+                <td>{product.seo_title || '미생성'}</td>
+                <td>{product.seo_description || '미생성'}</td>
+                <td>
+                  <button onClick={() => handleGenerateSEO(product.id)}>
+                    SEO {product.seo_title ? '재생성' : '생성'}
                   </button>
                 </td>
               </tr>
