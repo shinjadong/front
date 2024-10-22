@@ -7,6 +7,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true  // 이 줄을 추가하세요
 });
 
 // uid를 로컬 스토리지에서 가져오는 함수
