@@ -11,14 +11,7 @@ const api = axios.create({
 });
 
 // uid를 로컬 스토리지에서 가져오는 함수
-const getUid = () => {
-  const uid = localStorage.getItem('uid');
-  if (!uid) {
-    console.error('UID not found in localStorage');
-    return null;
-  }
-  return uid;
-};
+const getUid = () => localStorage.getItem('uid');
 
 // 요청 인터셉터에 토큰 추가
 api.interceptors.request.use((config) => {
@@ -45,16 +38,12 @@ export const collectProducts = async (productIds) => {
 
 export const getCollectedProducts = async () => {
   const uid = getUid();
-  if (!uid) {
-    throw new Error('사용자 ID를 찾을 수 없습니다.');
-  }
-  const response = await api.get(`/get_collected_products`, { params: { uid } });
+  const response = await api.get('/get_collected_products', { params: { uid } });
   return response.data;
 };
 
 export const matchTaobaoProduct = async (imageUrl) => {
-  const uid = getUid();
-  const response = await api.post('/taobao_match', { image_url: imageUrl, uid });
+  const response = await api.post('/taobao_match', { image_url: imageUrl });
   return response.data;
 };
 
@@ -64,13 +53,13 @@ export const signup = async (email, password, name) => {
 };
 
 export const login = async (email, password) => {
-  const response = await axios.post(`${API_URL}/login`, { email, password });
+  const response = await api.post('/login', { email, password });
   return response.data;
 };
 
 export const getUserInfo = async () => {
   const uid = getUid();
-  const response = await api.get(`/user-info?uid=${uid}`);
+  const response = await api.get('/user-info', { params: { uid } });
   return response.data;
 };
 
@@ -80,7 +69,7 @@ export const collectMarkets = async (marketNames) => {
   return response.data;
 };
 
-export const logout = async () => {
+export const logout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('uid');
   localStorage.removeItem('userInfo');
