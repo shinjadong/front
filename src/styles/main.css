@@ -169,3 +169,127 @@ th {
   margin-top: 20px;
 }
 
+/* 기존 스타일 아래에 추가 */
+
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.login-container {
+  background-color: white;
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-container h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 24px;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.login-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #1877f2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-button:hover {
+  background-color: #166fe5;
+}
+
+.signup-link {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.signup-link a {
+  color: #1877f2;
+  text-decoration: none;
+}
+
+.dashboard {
+  padding: 24px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-section {
+  margin-bottom: 24px;
+}
+
+.user-name {
+  color: #1877f2;
+  font-weight: bold;
+}
+
+.membership-level {
+  font-weight: bold;
+  color: #4caf50;
+}
+
+.quick-actions {
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.action-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  background-color: #f0f2f5;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #333;
+  transition: background-color 0.3s;
+}
+
+.action-button:hover {
+  background-color: #e4e6e9;
+}
+
+.action-button i {
+  font-size: 24px;
+  margin-bottom: 8px;
+  color: #1877f2;
+}

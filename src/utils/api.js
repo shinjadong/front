@@ -1,13 +1,13 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || '';  // 백엔드 서버 주소 변경
+const API_URL = 'https://1.234.83.86:5000';  // HTTPS로 변경
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true  // 이 줄을 추가하세요
+  withCredentials: true
 });
 
 // uid를 로컬 스토리지에서 가져오는 함수
