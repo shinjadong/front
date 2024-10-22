@@ -97,7 +97,8 @@ function CollectedProducts() {
               <th>타오바오 가격</th>
               <th>타오바오 링크</th>
               {showCategories && <th>카테고리</th>}
-              <th>SEO</th>
+              <th>SEO 최적화 상품명</th>
+              <th>SEO 액션</th>
             </tr>
           </thead>
           <tbody>
@@ -121,13 +122,7 @@ function CollectedProducts() {
                   ) : '매칭 안됨'}
                 </td>
                 {showCategories && <td>{product.category || '카테고리 없음'}</td>}
-                <td>
-                  <button onClick={() => handleGenerateSEO(product.id)}>
-                    SEO 생성
-                  </button>
-                </td>
                 <td>{product.seo_title || '미생성'}</td>
-                <td>{product.seo_description || '미생성'}</td>
                 <td>
                   <button onClick={() => handleGenerateSEO(product.id)}>
                     SEO {product.seo_title ? '재생성' : '생성'}
