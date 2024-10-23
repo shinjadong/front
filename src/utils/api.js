@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://moray-leading-jolly.ngrok-free.app';  // ngrok URL로 변경
+const API_URL = 'https://db705ff68777754c.ngrok.app';  // 새로운 ngrok URL로 업데이트
 
 const api = axios.create({
   baseURL: API_URL,
@@ -59,6 +59,9 @@ export const login = async (email, password) => {
 
 export const getUserInfo = async () => {
   const uid = getUid();
+  if (!uid) {
+    throw new Error('User ID not found');
+  }
   const response = await api.get('/user-info', { params: { uid } });
   return response.data;
 };
@@ -106,4 +109,20 @@ export const getSearchResult = async (historyId) => {
   const uid = getUid();
   const response = await api.get('/search_result', { params: { uid, history_id: historyId } });
   return response.data;
+};
+
+const CACHE_DURATION = 1000 * 60 * 60; // 1시간
+
+export const getCachedData = async (key, fetchFunction) => {
+  const cachedData = localStorage.getItem(key);
+  const cachedTime = localStorage.getItem(`${key}_time`);
+
+  if (cachedData && cachedTime && Date.now() - parseInt(cachedTime) < CACHE_DURATION) {
+    return JSON.parse(cachedData);
+  }
+
+  const freshData = await fetchFunction();
+  localStorage.setItem(key, JSON.stringify(freshData));
+  localStorage.setItem(`${key}_time`, Date.now().toString());
+  return freshData;
 };

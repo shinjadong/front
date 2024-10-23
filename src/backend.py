@@ -1,6 +1,6 @@
 # app.py
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -1177,6 +1177,13 @@ def get_search_result():
         "keyword": search_result['keyword'],
         "products": search_result['products']
     }), 200
+
+@app.route('/some-cacheable-endpoint')
+def cacheable_endpoint():
+    data = {...}  # 응답 데이터
+    response = make_response(jsonify(data))
+    response.headers['Cache-Control'] = 'public, max-age=3600'  # 1시간 동안 캐시
+    return response
 
 # Flask 애플리케이션 실행
 if __name__ == '__main__':

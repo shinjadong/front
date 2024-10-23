@@ -8,23 +8,43 @@ import CollectedProducts from './components/CollectedProducts';
 import TaobaoMatch from './components/TaobaoMatch';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import { getUserInfo } from './utils/api';
 import './styles/main.css';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
+    const checkLoginStatus = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          await getUserInfo(); // 유효한 토큰인지 확인
+          setIsLoggedIn(true);
+        } catch (error) {
+          console.error('Invalid token:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('uid');
+          localStorage.removeItem('userInfo');
+        }
+      }
+      setLoading(false);
+    };
+
+    checkLoginStatus();
   }, []);
 
-  const handleLogout = async () => {
-    // await logout();
+  const handleLogout = () => {
     setIsLoggedIn(false);
     localStorage.removeItem('token');
     localStorage.removeItem('uid');
     localStorage.removeItem('userInfo');
   };
+
+  if (loading) {
+    return <div>Loading...</div>; // 또는 로딩 스피너 컴포넌트
+  }
 
   return (
     <Router>
@@ -41,7 +61,6 @@ function App() {
               <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/" element={<Navigate to="/dashboard" />} />
-              {/* 추가적인 라우트를 여기에 추가할 수 있습니다 */}
             </Routes>
           </main>
         </div>

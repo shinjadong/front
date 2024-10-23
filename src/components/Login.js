@@ -18,8 +18,8 @@ function Login({ setIsLoggedIn }) {
     setLoading(true);
     try {
       const result = await login(email, password);
-      localStorage.setItem('uid', result.uid);
       localStorage.setItem('token', result.token);
+      localStorage.setItem('uid', result.uid);
       if (result.user) {
         localStorage.setItem('userInfo', JSON.stringify(result.user));
       }

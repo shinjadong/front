@@ -111,7 +111,7 @@ function CollectedProducts() {
           <tbody>
             {products.map(product => (
               <tr key={product.id}>
-                <td><img src={product.image_url} alt={product.product_title} width="50" /></td>
+                <td><img src={`${product.image_url}?w=100&h=100`} alt={product.product_title} width="50" height="50" loading="lazy" /></td>
                 <td>{product.product_title}</td>
                 <td>{product.price.toLocaleString()}원</td>
                 <td>

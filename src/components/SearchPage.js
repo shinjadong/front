@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { searchProducts, collectProducts } from '../utils/api';
+import LoadingSpinner from './LoadingSpinner';
 import '../styles/main.css';
 
 function SearchPage() {
@@ -59,8 +60,13 @@ function SearchPage() {
     );
   };
 
+  const filteredProducts = useMemo(() => {
+    return products.filter(/* 필터링 로직 */);
+  }, [products /* 의존성 배열 */]);
+
   return (
     <div className="search-page">
+      {loading && <LoadingSpinner />}
       <h2>상품 검색</h2>
       <form onSubmit={handleSearch} className="search-container">
         <div className="search-bar">
