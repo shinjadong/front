@@ -754,14 +754,23 @@ def generate_seo():
             product_titles = scraper.driver.find_elements(By.CSS_SELECTOR, 'div.product_title__Mmw2K')
             titles = [title.text.strip() for title in product_titles[:20]]  # 상위 20개 상품명만 사용
 
-            # 가장 많이 반복되는 단어 추출
+            # 가장 많이 반복되는 단어 추출 (중복 제거)
             words = ' '.join(titles).split()
             word_counts = Counter(words)
-            common_words = [word for word, count in word_counts.most_common(5) if len(word) > 1]
+            common_words = list(set([word for word, count in word_counts.most_common(10) if len(word) > 1]))
 
-            # SEO 타이틀 생성
-            seo_title = ' '.join([search_query] + common_words)
-            seo_title = seo_title[:50]  # 50자로 제한
+            # SEO 타이틀 생성 (랜덤 요소 추가)
+            seo_title = search_query
+            remaining_length = 50 - len(seo_title.encode('utf-8'))
+            
+            while remaining_length > 0 and common_words:
+                word = random.choice(common_words)
+                if len((seo_title + ' ' + word).encode('utf-8')) <= 50:
+                    seo_title += ' ' + word
+                    remaining_length = 50 - len(seo_title.encode('utf-8'))
+                    common_words.remove(word)
+                else:
+                    break
 
             # MongoDB에 저장
             db.users.update_one(
@@ -839,7 +848,7 @@ def search_products_route():
 
         user = db.users.find_one({"_id": uid})
         if not user:
-            return jsonify({"error": "사용��� 찾을 수 습���."}), 404
+            return jsonify({"error": "사용 찾을 수 습."}), 404
 
         scraper = NaverShoppingScraper(config['Paths']['download_folder'])
         top_10_products = scraper.search_products(keyword, uid)  # uid 전달
@@ -1133,6 +1142,41 @@ def download_heyseller():
         logger.error(f"헤이셀러 다운로드 중 오류 발생: {str(e)}")
         logger.error(traceback.format_exc())
         return jsonify({"error": f"헤이셀러 다운로드 중 오류가 발생했습니다: {str(e)}"}), 500
+
+@app.route('/search_history', methods=['GET'])
+def get_search_history():
+    uid = request.args.get('uid')
+    if not uid:
+        return jsonify({"error": "사용자 ID가 필요합니다."}), 400
+
+    user = db.users.find_one({"_id": uid})
+    if not user:
+        return jsonify({"error": "사용자를 찾을 수 없습니다."}), 404
+
+    search_history = user.get('search_results', [])
+    history = [{"id": str(result['_id']), "keyword": result['keyword'], "timestamp": result['timestamp']} for result in search_history]
+    
+    return jsonify(history), 200
+
+@app.route('/search_result', methods=['GET'])
+def get_search_result():
+    uid = request.args.get('uid')
+    history_id = request.args.get('history_id')
+    if not uid or not history_id:
+        return jsonify({"error": "사용자 ID와 검색 기록 ID가 필요합니다."}), 400
+
+    user = db.users.find_one({"_id": uid})
+    if not user:
+        return jsonify({"error": "사용자를 찾을 수 없습니다."}), 404
+
+    search_result = next((result for result in user.get('search_results', []) if str(result['_id']) == history_id), None)
+    if not search_result:
+        return jsonify({"error": "해당 검색 결과를 찾을 수 없습니다."}), 404
+
+    return jsonify({
+        "keyword": search_result['keyword'],
+        "products": search_result['products']
+    }), 200
 
 # Flask 애플리케이션 실행
 if __name__ == '__main__':

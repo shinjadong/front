@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Sourcing</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <header class="top-bar">
+        <nav class="main-menu" aria-label="주요 내비게이션">
+            <ul>
+                <li class="dropdown">
+                    <a href="#" class="active" tabindex="0"><i class="fas fa-box"></i> 소싱 <i class="fas fa-chevron-down dropdown-arrow"></i></a>
+                    <ul class="dropdown-content" aria-label="소싱 하위 메뉴">
+                        <li><a href="#" tabindex="0"><i class="fas fa-robot"></i> AI 소싱</a></li>
+                        <li><a href="#" tabindex="0"><i class="fas fa-undo"></i> REVERSE</a></li>
+                        <li><a href="#" tabindex="0"><i class="fas fa-truck"></i> 배송대행지</a></li>
+                        <li><a href="#" tabindex="0"><i class="fas fa-hashtag"></i> 통관번호</a></li>
+                        <li><a href="#" tabindex="0"><i class="fas fa-ban"></i> 제외 LIST</a></li>
+                    </ul>
+                </li>
+                <li class="disabled">
+                    <a href="#" class="not-available" tabindex="-1"><i class="fas fa-cogs"></i> AI <i class="fas fa-chevron-down dropdown-arrow"></i></a>
+                    <span class="tooltip">준비중입니다.</span>
+                </li>
+                <li class="disabled">
+                    <a href="#" class="not-available" tabindex="-1"><i class="fas fa-chart-line"></i> 마케팅 <i class="fas fa-chevron-down dropdown-arrow"></i></a>
+                    <span class="tooltip">준비중입니다.</span>
+                </li>
+                <li class="disabled">
+                    <a href="#" class="not-available" tabindex="-1"><i class="fas fa-youtube"></i> 유튜브</a>
+                    <span class="tooltip">준비중입니다.</span>
+                </li>
+                <li class="disabled">
+                    <a href="#" class="not-available" tabindex="-1"><i class="fas fa-user-tie"></i> 멤버십</a>
+                    <span class="tooltip">준비중입니다.</span>
+                </li>
+                <li class="disabled">
+                    <a href="#" class="not-available" tabindex="-1"><i class="fas fa-campground"></i> 레버리지캠프</a>
+                    <span class="tooltip">준비중입니다.</span>
+                </li>
+            </ul>
+        </nav>
+        <div class="user-actions">
+            <span id="remainingCredits">남은 컨설팅 횟수: 5</span>
+            <a href="#" class="guide">가이드</a>
+            <a href="#" class="icon" aria-label="설정"><i class="fas fa-cog"></i></a>
+            <a href="#" class="icon" aria-label="알림"><i class="fas fa-bell"></i></a>
+            <a href="#" id="logoutButton" class="icon" aria-label="로그아웃"><i class="fas fa-sign-out-alt"></i></a>
+        </div>
+    </header>
+
+    <aside class="sidebar">
+        <ul>
+            <li class="active" tabindex="0" data-tooltip="AI 소싱"><i class="fas fa-robot"></i><span class="sidebar-text">AI 소싱</span></li>
+            <li tabindex="0" data-tooltip="REVERSE"><i class="fas fa-undo"></i><span class="sidebar-text">REVERSE</span></li>
+            <li tabindex="0" data-tooltip="배송대행지"><i class="fas fa-truck"></i><span class="sidebar-text">배송대행지</span></li>
+            <li tabindex="0" data-tooltip="통관번호"><i class="fas fa-hashtag"></i><span class="sidebar-text">통관번호</span></li>
+            <li tabindex="0" data-tooltip="제외 LIST"><i class="fas fa-ban"></i><span class="sidebar-text">제외 LIST</span></li>
+        </ul>
+    </aside>
+
+    <div class="container">
+        <main class="main-content">
+            <div class="user-info">
+                <span id="userName">사용자</span>님, 환영합니다!
+                (멤버십 레벨: <span id="membershipLevel">Basic</span>)
+            </div>
+
+            <section class="top-sections">
+                <section class="section search-section">
+                    <h2>검색</h2>
+                    <div class="search-container">
+                        <div class="search-type">
+                            <select id="searchType" aria-label="검색 유형 선택">
+                                <option value="review">리뷰많은순</option>
+                                <option value="rel">네이버랭킹순</option>
+                            </select>
+                        </div>
+                        <div class="search-bar">
+                            <input type="text" id="searchInput" placeholder="키워드를 입력하세요" aria-label="검색어 입력">
+                            <button class="search-button" id="searchButton" aria-label="검색"><i class="fas fa-search"></i></button>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <section class="section table-section">
+                <h2>상품 목록</h2>
+                <div class="table-actions">
+                    <button class="collect-button" id="collectProductButton" aria-label="선택된 상품 수집"><i class="fas fa-clipboard-check"></i> 선택된 상품 수집</button>
+                    <button class="collect-button" id="collectMarketButton" aria-label="선택된 마켓 수집"><i class="fas fa-store"></i> 선택된 마켓 수집</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" aria-label="모두 선택"></th>
+                            <th>이미지</th>
+                            <th>상품명</th>
+                            <th>가격</th>
+                            <th>마켓명</th>
+                            <th>리뷰수</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody">
+                        <!-- JavaScript로 동적으로 추가 -->
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <!-- 로딩 인디케이터 -->
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- 메시지 모달 -->
+    <div id="messageModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span id="closeModal" class="close-button">&times;</span>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';  // 백엔드 서버 주소
+
+        // UI 요소
+        const searchButton = document.getElementById('searchButton');
+        const collectProductButton = document.getElementById('collectProductButton');
+        const collectMarketButton = document.getElementById('collectMarketButton');
+        const productTableBody = document.getElementById('productTableBody');
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const closeModal = document.getElementById('closeModal');
+        const logoutButton = document.getElementById('logoutButton');
+
+        // 유틸리티 함수
+        function showLoading() {
+            loadingIndicator.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            loadingIndicator.style.display = 'none';
+        }
+
+        function showMessage(message, isError = false) {
+            modalMessage.textContent = message;
+            messageModal.style.display = 'flex';
+            modalMessage.style.color = isError ? 'red' : 'green';
+        }
+
+        // 사용자 정보 로드
+        async function loadUserInfo() {
+            try {
+                const response = await axios.get(`${API_URL}/user-info`);
+                const userData = response.data;
+                document.getElementById('userName').textContent = userData.name;
+                document.getElementById('membershipLevel').textContent = userData.membershipLevel;
+                document.getElementById('remainingCredits').textContent = `남은 컨설팅 횟수: ${userData.remainingCredits}`;
+            } catch (error) {
+                console.error('사용자 정보 로드 실패:', error);
+                showMessage('사용자 정보를 불러오는데 실패했습니다.', true);
+            }
+        }
+
+        // 상품 검색
+        async function searchProducts() {
+            const keyword = document.getElementById('searchInput').value;
+            const sortType = document.getElementById('searchType').value;
+
+            if (!keyword) {
+                showMessage('검색어를 입력해주세요.', true);
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await axios.post(`${API_URL}/search`, { keyword, sort_type: sortType });
+                displayProducts(response.data.products);
+            } catch (error) {
+                console.error('상품 검색 실패:', error);
+                showMessage('상품 검색에 실패했습니다.', true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 상품 표시
+        function displayProducts(products) {
+            productTableBody.innerHTML = '';
+            products.forEach(product => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" name="product-select" value="${product.id}" aria-label="상품 선택"></td>
+                    <td><img src="${product.image_url}" alt="상품 이미지" width="50"></td>
+                    <td>${product.product_title}</td>
+                    <td>${product.price}</td>
+                    <td>${product.market_name}</td>
+                    <td>${product.review_count}</td>
+                `;
+                productTableBody.appendChild(row);
+            });
+        }
+
+        // 상품 수집
+        async function collectProducts(collectionType) {
+            const selectedProducts = document.querySelectorAll('input[name="product-select"]:checked');
+            const selectedProductIds = Array.from(selectedProducts).map(checkbox => checkbox.value);
+
+            if (selectedProductIds.length === 0) {
+                showMessage('선택된 상품이 없습니다.', true);
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await axios.post(`${API_URL}/collect`, { 
+                    selected_product_ids: selectedProductIds,
+                    collection_type: collectionType
+                });
+                showMessage(response.data.message);
+            } catch (error) {
+                console.error('수집 실패:', error);
+                showMessage(`${collectionType === 'product' ? '상품' : '마켓'} 수집에 실패했습니다.`, true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 로그아웃
+        async function logout() {
+            try {
+                await axios.post(`${API_URL}/logout`);
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('로그아웃 실패:', error);
+                showMessage('로그아웃에 실패했습니다.', true);
+            }
+        }
+
+        // 이벤트 리스너
+        searchButton.addEventListener('click', searchProducts);
+        collectProductButton.addEventListener('click', () => collectProducts('product'));
+        collectMarketButton.addEventListener('click', () => collectProducts('market'));
+        logoutButton.addEventListener('click', logout);
+        closeModal.addEventListener('click', () => messageModal.style.display = 'none');
+
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('input[name="product-select"]');
+            checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+        });
+
+        // 초기화
+        loadUserInfo();
+    </script>
+</body>
+</html>

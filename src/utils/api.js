@@ -95,3 +95,15 @@ export const downloadHeySeller = async () => {
   });
   return response.data;
 };
+
+export const getSearchHistory = async () => {
+  const uid = getUid();
+  const response = await api.get('/search_history', { params: { uid } });
+  return response.data;
+};
+
+export const getSearchResult = async (historyId) => {
+  const uid = getUid();
+  const response = await api.get('/search_result', { params: { uid, history_id: historyId } });
+  return response.data;
+};

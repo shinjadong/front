@@ -8,7 +8,7 @@ import CollectedProducts from './components/CollectedProducts';
 import TaobaoMatch from './components/TaobaoMatch';
 import Login from './components/Login';
 import Signup from './components/Signup';
-import { logout } from './utils/api';
+import './styles/main.css';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -19,7 +19,7 @@ function App() {
   }, []);
 
   const handleLogout = async () => {
-    await logout();
+    // await logout();
     setIsLoggedIn(false);
     localStorage.removeItem('token');
     localStorage.removeItem('uid');
@@ -41,6 +41,7 @@ function App() {
               <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/" element={<Navigate to="/dashboard" />} />
+              {/* 추가적인 라우트를 여기에 추가할 수 있습니다 */}
             </Routes>
           </main>
         </div>

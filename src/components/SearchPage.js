@@ -1,37 +1,62 @@
 import React, { useState } from 'react';
 import { searchProducts, collectProducts } from '../utils/api';
+import '../styles/main.css';
 
 function SearchPage() {
   const [keyword, setKeyword] = useState('');
   const [products, setProducts] = useState([]);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
+    if (!keyword) {
+      alert('키워드를 입력해주세요.');
+      return;
+    }
+    setLoading(true);
     try {
       const result = await searchProducts(keyword);
       setProducts(result.products);
     } catch (error) {
       console.error('검색 실패:', error);
-      alert(error.response?.data?.error || '검색 중 오류가 발생했습니다. 자세한 내용: ' + error.message);
+      alert(error.response?.data?.error || '검색 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCollectProducts = async () => {
+    if (selectedProductIds.length === 0) {
+      alert('수집할 상품을 선택해주세요.');
+      return;
+    }
+    setLoading(true);
     try {
-      await collectProducts(selectedProductIds);
-      alert('선택한 상품이 성공적으로 수집되었습니다.');
+      const response = await collectProducts(selectedProductIds);
+      alert(response.message);
       setSelectedProductIds([]);
     } catch (error) {
       console.error('상품 수집 실패:', error);
-      if (error.response) {
-        alert(`상품 수집 실패: ${error.response.data.message || '서버 오류가 발생했습니다.'}`);
-      } else if (error.request) {
-        alert('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
-      } else {
-        alert('상품 수집 중 오류가 발생했습니다.');
-      }
+      alert(error.response?.data?.error || '상품 수집 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const toggleSelectAll = (e) => {
+    if (e.target.checked) {
+      const allIds = products.map(product => product.id);
+      setSelectedProductIds(allIds);
+    } else {
+      setSelectedProductIds([]);
+    }
+  };
+
+  const toggleSelectProduct = (id) => {
+    setSelectedProductIds(prev =>
+      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+    );
   };
 
   return (
@@ -44,23 +69,37 @@ function SearchPage() {
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="키워드를 입력하세요" 
+            className="search-input"
           />
-          <button type="submit" className="search-button">검색</button>
+          <button type="submit" className="search-button" disabled={loading}>
+            {loading ? '검색 중...' : <i className="fas fa-search"></i>}
+          </button>
         </div>
       </form>
 
       {products.length > 0 && (
         <div className="search-results">
-          <h3>검색 결과</h3>
-          <button onClick={handleCollectProducts} className="collect-button">선택한 상품 수집</button>
+          <div className="table-actions">
+            <button onClick={handleCollectProducts} className="collect-button" disabled={loading}>
+              {loading ? '수집 중...' : '선택한 상품 수집'}
+            </button>
+          </div>
           <table>
             <thead>
               <tr>
-                <th>선택</th>
+                <th>
+                  <input 
+                    type="checkbox" 
+                    onChange={toggleSelectAll} 
+                    checked={selectedProductIds.length === products.length}
+                    aria-label="모두 선택"
+                  />
+                </th>
                 <th>이미지</th>
                 <th>상품명</th>
                 <th>가격</th>
                 <th>마켓명</th>
+                <th>리뷰수</th>
               </tr>
             </thead>
             <tbody>
@@ -68,21 +107,17 @@ function SearchPage() {
                 <tr key={product.id}>
                   <td>
                     <input 
-                      type="checkbox"
+                      type="checkbox" 
                       checked={selectedProductIds.includes(product.id)}
-                      onChange={() => {
-                        setSelectedProductIds(prev => 
-                          prev.includes(product.id)
-                            ? prev.filter(id => id !== product.id)
-                            : [...prev, product.id]
-                        );
-                      }}
+                      onChange={() => toggleSelectProduct(product.id)}
+                      aria-label={`상품 ${product.product_title} 선택`}
                     />
                   </td>
                   <td><img src={product.image_url} alt={product.product_title} width="50" /></td>
                   <td>{product.product_title}</td>
-                  <td>{product.price}</td>
+                  <td>{product.price.toLocaleString()}원</td>
                   <td>{product.market_name}</td>
+                  <td>{product.review_count}</td>
                 </tr>
               ))}
             </tbody>
