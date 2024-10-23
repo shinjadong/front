@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://db705ff68777754c.ngrok.app';  // 새로운 ngrok URL로 업데이트
+const API_URL = process.env.REACT_APP_API_URL || 'https://tn_2npNJPNGOhJmg8rV9hhT7TfN2yT.ngrok-free.app';  // 새로운 ngrok URL로 업데이트
 
 const api = axios.create({
   baseURL: API_URL,
