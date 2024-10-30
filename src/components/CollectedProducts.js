@@ -7,6 +7,7 @@ function CollectedProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCategories, setShowCategories] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState([]);
 
   useEffect(() => {
     fetchCollectedProducts();
@@ -25,10 +26,24 @@ function CollectedProducts() {
     }
   };
 
+  const handleProductSelect = (productId) => {
+    setSelectedProducts(prev => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
+    });
+  };
+
   const handleTaobaoMatch = async () => {
+    if (selectedProducts.length === 0) {
+      alert('매칭할 상품을 선택해주세요.');
+      return;
+    }
+
     try {
-      const productIds = products.map(product => product.id);
-      const result = await batchTaobaoMatch(productIds);
+      const result = await batchTaobaoMatch(selectedProducts);
       setProducts(result.matched_products);
       alert('타오바오 매칭이 완료되었습니다.');
     } catch (error) {
@@ -38,8 +53,13 @@ function CollectedProducts() {
   };
 
   const handleHeySellerDownload = async () => {
+    if (selectedProducts.length === 0) {
+      alert('다운로드할 상품을 선택해주세요.');
+      return;
+    }
+
     try {
-      const blob = await downloadHeySeller();
+      const blob = await downloadHeySeller(selectedProducts);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
@@ -51,11 +71,16 @@ function CollectedProducts() {
       alert('헤이셀러 파일이 다운로드되었습니다.');
     } catch (error) {
       console.error('헤이셀러 다운로드 실패:', error);
-      alert(error.response?.data?.error || '헤이셀러 다운로드 중 오류가 발생했습니다. 자세한 내용: ' + error.message);
+      alert(error.response?.data?.error || '헤이셀러 다운로드 중 오류가 발생했습니다.');
     }
   };
 
   const handleGenerateSEO = async (productId) => {
+    if (!selectedProducts.includes(productId)) {
+      alert('SEO를 생성할 상품을 선택해주세요.');
+      return;
+    }
+
     try {
       const result = await generateSEO(productId);
       setProducts(prevProducts =>
@@ -92,11 +117,19 @@ function CollectedProducts() {
     <div className="collected-products">
       <h2>수집된 상품</h2>
       <div className="action-buttons">
-        <button onClick={handleTaobaoMatch} className="collect-button" disabled={loading}>
-          {loading ? '매칭 중...' : '타오바오 매칭'}
+        <button 
+          onClick={handleTaobaoMatch} 
+          className="collect-button" 
+          disabled={selectedProducts.length === 0}
+        >
+          타오바오 매칭
         </button>
-        <button onClick={handleHeySellerDownload} className="collect-button" disabled={loading}>
-          {loading ? '다운로드 중...' : '헤이셀러 다운로드'}
+        <button 
+          onClick={handleHeySellerDownload} 
+          className="collect-button" 
+          disabled={selectedProducts.length === 0}
+        >
+          헤이셀러 다운로드
         </button>
         <button onClick={() => setShowCategories(!showCategories)} className="toggle-categories-button">
           {showCategories ? '카테고리 숨기기' : '카테고리 보기'}
@@ -106,6 +139,7 @@ function CollectedProducts() {
         <table className="collected-products-table">
           <thead>
             <tr>
+              <th>선택</th>
               <th>이미지</th>
               <th>상품명</th>
               <th>가격</th>
@@ -121,6 +155,13 @@ function CollectedProducts() {
           <tbody>
             {products.map(product => (
               <tr key={product.id}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.includes(product.id)}
+                    onChange={() => handleProductSelect(product.id)}
+                  />
+                </td>
                 <td>
                   <img 
                     src={getImageUrl(product.image_url)} 
@@ -153,7 +194,11 @@ function CollectedProducts() {
                 {showCategories && <td>{product.category || '카테고리 없음'}</td>}
                 <td>{product.seo_title || '미생성'}</td>
                 <td>
-                  <button onClick={() => handleGenerateSEO(product.id)} className="seo-button">
+                  <button 
+                    onClick={() => handleGenerateSEO(product.id)} 
+                    className="seo-button"
+                    disabled={!selectedProducts.includes(product.id)}
+                  >
                     SEO {product.seo_title ? '재생성' : '생성'}
                   </button>
                 </td>
