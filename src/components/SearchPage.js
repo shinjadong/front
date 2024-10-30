@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { searchProducts } from '../utils/api';
 import ProductList from './ProductList';
 import '../styles/SearchPage.css';
+import LoadingSpinner from './LoadingSpinner';
 
 const SearchPage = () => {
   const [keyword, setKeyword] = useState('');
@@ -9,6 +10,7 @@ const SearchPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   // 스마트스토어 상품과 일반 상품 분리
   const { smartstoreProducts, otherProducts } = useMemo(() => {
@@ -27,6 +29,7 @@ const SearchPage = () => {
     }
 
     setLoading(true);
+    setLoadingMessage('상품을 검색하고 있습니다. 잠시만 기다려주세요...');
     setError(null);
 
     try {
@@ -42,6 +45,7 @@ const SearchPage = () => {
       console.error('Search error:', err);
     } finally {
       setLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -60,6 +64,9 @@ const SearchPage = () => {
       setError('수집할 상품을 선택해주세요.');
       return;
     }
+
+    setLoading(true);
+    setLoadingMessage(type === 'market' ? '마켓 정보를 수집하고 있습니다...' : '상품 정보를 수집하고 있습니다...');
 
     try {
       const uid = localStorage.getItem('uid');
@@ -92,11 +99,15 @@ const SearchPage = () => {
       }
     } catch (err) {
       setError(err.message || '수집 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
     }
   };
 
   return (
     <div className="search-page">
+      {loading && <LoadingSpinner message={loadingMessage} />}
       <form onSubmit={handleSearch} className="search-form">
         <input
           type="text"

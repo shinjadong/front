@@ -75,6 +75,16 @@ function CollectedProducts() {
     return taobaoId ? `https://item.taobao.com/item.htm?id=${taobaoId}` : '#';
   };
 
+  // 이미지 URL 처리 함수 추가
+  const getImageUrl = (url) => {
+    if (!url) return '';
+    // 이미지 URL이 상대 경로인 경우 전체 URL로 변환
+    if (url.startsWith('/')) {
+      return `https://shopping.naver.com${url}`;
+    }
+    return url;
+  };
+
   if (loading) return <div className="loading">로딩 중...</div>;
   if (error) return <div className="error">{error}</div>;
 
@@ -111,7 +121,19 @@ function CollectedProducts() {
           <tbody>
             {products.map(product => (
               <tr key={product.id}>
-                <td><img src={`${product.image_url}?w=100&h=100`} alt={product.product_title} width="50" height="50" loading="lazy" /></td>
+                <td>
+                  <img 
+                    src={getImageUrl(product.image_url)} 
+                    alt={product.title} 
+                    width="50" 
+                    height="50"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/placeholder-image.png'; // 기본 이미지
+                    }}
+                    loading="lazy"
+                  />
+                </td>
                 <td>{product.product_title}</td>
                 <td>{product.price.toLocaleString()}원</td>
                 <td>

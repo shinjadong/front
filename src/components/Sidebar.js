@@ -36,6 +36,11 @@ function Sidebar() {
             <i className="fas fa-shopping-basket"></i><span className="sidebar-text">수집된 상품</span>
           </Link>
         </li>
+        <li tabIndex="0" data-tooltip="마켓 관리">
+          <Link to="/markets">
+            <i className="fas fa-store"></i><span className="sidebar-text">마켓 관리</span>
+          </Link>
+        </li>
       </ul>
     </aside>
   );

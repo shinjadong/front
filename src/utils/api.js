@@ -181,4 +181,15 @@ export const generateSEO = async (productId) => {
     }
 };
 
+// 마켓 DB 조회
+export const getMarketDB = async (uid) => {
+  try {
+    const response = await api.get(`/get_market_db?uid=${uid}`);
+    return response.data;
+  } catch (error) {
+    console.error('Get market DB error:', error.response || error);
+    throw error;
+  }
+};
+
 export default api;

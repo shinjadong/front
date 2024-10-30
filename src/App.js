@@ -8,6 +8,7 @@ import CollectedProducts from './components/CollectedProducts';
 import TaobaoMatch from './components/TaobaoMatch';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import MarketManagement from './components/MarketManagement';
 import { getUserInfo } from './utils/api';
 import './styles/main.css';
 
@@ -60,6 +61,7 @@ function App() {
               <Route path="/taobao-match" element={isLoggedIn ? <TaobaoMatch /> : <Navigate to="/login" />} />
               <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/markets" element={isLoggedIn ? <MarketManagement /> : <Navigate to="/login" />} />
               <Route path="/" element={<Navigate to="/dashboard" />} />
             </Routes>
           </main>
