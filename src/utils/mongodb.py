@@ -1,240 +1,245 @@
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QLineEdit, QLabel, QFileDialog, QMessageBox, QComboBox
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+                             QHBoxLayout, QTreeWidget, QTreeWidgetItem, QPushButton, 
+                             QLabel, QLineEdit, QComboBox, QTabWidget)
 from PySide6.QtCore import Qt
-import firebase_admin
-from firebase_admin import credentials, firestore
 from pymongo import MongoClient
 import pandas as pd
-import io
-from openpyxl import load_workbook
-import os
-import glob
+from datetime import datetime
+import json
 
-# Firebase 초기화
-def find_service_account_key():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    possible_names = ['serviceAccountKey.json', 'firebase-adminsdk.json', 'firebase-key.json']
-    search_dirs = [current_dir, os.path.dirname(current_dir)]
-
-    for directory in search_dirs:
-        for name in possible_names:
-            exact_path = os.path.join(directory, name)
-            if os.path.exists(exact_path):
-                return exact_path
-            
-            pattern = os.path.join(directory, f'*{name}')
-            matches = glob.glob(pattern)
-            if matches:
-                return matches[0]
-    
-    raise FileNotFoundError("서비스 계정 키 파일을 찾을 수 없습니다.")
-
-service_account_path = find_service_account_key()
-cred = credentials.Certificate(service_account_path)
-firebase_admin.initialize_app(cred)
-firestore_db = firestore.client()
-
-# MongoDB 연결
-uri = "mongodb+srv://shinws8908:dnfhlao1@cluster0.h7c55.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-mongo_client = MongoClient(uri)
-mongo_db = mongo_client['scraping_db']
-
-# Firebase 사용자 UID 목록
-firebase_users = [
-    {"email": "dntjd@gmail.com", "uid": "SQQmqVjh6nMPXxLNxgm1bC"},
-    {"email": "xptmxm1@gamil.com", "uid": "fzGbBirSh0QAzNmqw4EvA4q"},
-    {"email": "tlsdntjd89@naver.com", "uid": "mWPzCNrk5KR9jSCVt4D264u"},
-    {"email": "tlswkehd@naver.com", "uid": "fRlCykBJCQafHjuqNHj9ckANR"},
-    {"email": "lackas@naver.com", "uid": "USyyGRIBW1MYhDeWdjQuh3I"},
-    {"email": "shinws8908@naver.com", "uid": "0JPleJNXt9Sy54bzQMwY3yBt"},
-    {"email": "escape8908@gmail.com", "uid": "2Z141iE7eresjv2GsnFPdJ3KZ"},
-    {"email": "shinws8908@gmail.com", "uid": "FANMdII6TrMHpAmcgkZNyyJ"},
-    {"email": "tlswkehd@gmail.com", "uid": "Bz2kHjnWoySF9NYes40UYGG"}
-]
-
-def flatten_dict(d, parent_key='', sep='_'):
-    items = []
-    for k, v in d.items():
-        new_key = f"{parent_key}{sep}{k}" if parent_key else k
-        if isinstance(v, dict):
-            items.extend(flatten_dict(v, new_key, sep=sep).items())
-        else:
-            items.append((new_key, v))
-    return dict(items)
-
-def load_data(source):
-    if source == "MongoDB":
-        data = list(mongo_db.users.find())
-    else:  # Firestore
-        data = [doc.to_dict() for doc in firestore_db.collection('users').get()]
-    
-    flattened_data = [flatten_dict(item) for item in data]
-    df = pd.DataFrame(flattened_data)
-    return df
-
-def create_user(uid, email):
-    user_data = {
-        "_id": uid,
-        "user_info": {
-            "email": email,
-            "membershipLevel": "Basic",
-            "remainingCredits": 10
-        },
-        "config": {
-            "market": 0,
-            "min_price": 0,
-            "max_price": 1000000000,
-            "option": "전체구매건수",
-            "skip_words": [],
-            "markets": []
-        },
-        "collected_products": [],
-        "market_db": {},
-        "search_results": []
-    }
-    
-    mongo_db.users.update_one({"_id": uid}, {"$set": user_data}, upsert=True)
-    print(f"사용자 '{uid}' 생성 또는 업데이트됨")
-
-def sync_data():
-    # Firestore에서 MongoDB로 데이터 동기화
-    firestore_users = firestore_db.collection('users').get()
-    for user in firestore_users:
-        user_data = user.to_dict()
-        user_data['_id'] = user.id
-        mongo_db.users.update_one({'_id': user.id}, {'$set': user_data}, upsert=True)
-    
-    # MongoDB에서 Firestore로 데이터 동기화
-    mongo_users = mongo_db.users.find()
-    for user in mongo_users:
-        user_id = user.pop('_id')
-        firestore_db.collection('users').document(user_id).set(user)
-
-class DatabaseManager(QMainWindow):
+class MongoDBManager(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Database Manager")
-        self.setGeometry(100, 100, 1000, 600)
+        self.setWindowTitle("MongoDB Manager")
+        self.setGeometry(100, 100, 1200, 800)
+        
+        # MongoDB 연결 설정
+        self.setup_mongodb()
+        
+        # 메인 위젯 설정
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        layout = QHBoxLayout(main_widget)
+        
+        # 좌측 패널 (데이터베이스 구조)
+        left_panel = QWidget()
+        left_layout = QVBoxLayout(left_panel)
+        
+        # 데이터베이스 트리
+        self.db_tree = QTreeWidget()
+        self.db_tree.setHeaderLabels(["Database Structure"])
+        self.populate_db_tree()
+        left_layout.addWidget(self.db_tree)
+        
+        # 우측 패널 (데이터 뷰어/에디터)
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
+        
+        # 탭 위젯
+        self.tab_widget = QTabWidget()
+        self.setup_tabs()
+        right_layout.addWidget(self.tab_widget)
+        
+        # 레이아웃에 패널 추가
+        layout.addWidget(left_panel, 1)
+        layout.addWidget(right_panel, 2)
+        
+        # 초기 데이터 로드
+        self.load_data()
 
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
-        self.layout = QVBoxLayout(self.central_widget)
-
-        self.setup_ui()
-        self.load_data("MongoDB")
-
-    def setup_ui(self):
-        # 상단 컨트롤
-        controls = QHBoxLayout()
-        self.source_combo = QComboBox()
-        self.source_combo.addItems(["MongoDB", "Firestore"])
-        self.source_combo.currentTextChanged.connect(self.on_source_changed)
-        self.filter_input = QLineEdit()
-        self.filter_input.setPlaceholderText("Filter...")
-        self.apply_filter_btn = QPushButton("Apply Filter")
-        self.apply_filter_btn.clicked.connect(self.apply_filter)
-        controls.addWidget(QLabel("Data Source:"))
-        controls.addWidget(self.source_combo)
-        controls.addWidget(self.filter_input)
-        controls.addWidget(self.apply_filter_btn)
-        self.layout.addLayout(controls)
-
-        # 테이블
-        self.table = QTableWidget()
-        self.layout.addWidget(self.table)
-
-        # 하단 버튼
-        buttons = QHBoxLayout()
-        self.refresh_btn = QPushButton("Refresh")
-        self.refresh_btn.clicked.connect(self.refresh_data)
-        self.export_btn = QPushButton("Export to CSV")
-        self.export_btn.clicked.connect(self.export_to_csv)
-        self.upload_template_btn = QPushButton("Upload Template")
-        self.upload_template_btn.clicked.connect(self.upload_template)
-        self.sync_btn = QPushButton("Sync Databases")
-        self.sync_btn.clicked.connect(self.sync_databases)
-        buttons.addWidget(self.refresh_btn)
-        buttons.addWidget(self.export_btn)
-        buttons.addWidget(self.upload_template_btn)
-        buttons.addWidget(self.sync_btn)
-        self.layout.addLayout(buttons)
-
-    def on_source_changed(self, source):
-        self.load_data(source)
-
-    def load_data(self, source):
+    def setup_mongodb(self):
+        """MongoDB 연결 설정"""
         try:
-            self.df = load_data(source)
-            self.update_table(self.df)
+            self.uri = "mongodb+srv://shinws8908:dnfhlao1@cluster0.h7c55.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+            self.client = MongoClient(self.uri)
+            self.db = self.client['scraping_db']
+            print("MongoDB 연결 성공")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load data: {str(e)}")
+            print(f"MongoDB 연결 실패: {str(e)}")
+            sys.exit(1)
 
-    def update_table(self, df):
-        self.table.setRowCount(df.shape[0])
-        self.table.setColumnCount(df.shape[1])
-        self.table.setHorizontalHeaderLabels(df.columns)
+    def populate_db_tree(self):
+        """데이터베이스 구조를 트리로 표시"""
+        try:
+            root = QTreeWidgetItem(self.db_tree, ["scraping_db"])
+            
+            collections = self.db.list_collection_names()
+            for collection in collections:
+                collection_item = QTreeWidgetItem(root, [collection])
+                sample_doc = self.db[collection].find_one()
+                if sample_doc:
+                    self.add_document_structure(collection_item, sample_doc)
+                    
+            self.db_tree.expandAll()
+        except Exception as e:
+            print(f"데이터베이스 구조 로딩 실패: {str(e)}")
 
-        for row in range(df.shape[0]):
-            for col in range(df.shape[1]):
-                item = QTableWidgetItem(str(df.iloc[row, col]))
-                self.table.setItem(row, col, item)
+    def add_document_structure(self, parent, doc):
+        """문서 구조를 트리 아이템으로 추가"""
+        for key, value in doc.items():
+            if isinstance(value, dict):
+                item = QTreeWidgetItem(parent, [f"{key} (Object)"])
+                self.add_document_structure(item, value)
+            elif isinstance(value, list):
+                item = QTreeWidgetItem(parent, [f"{key} (Array)"])
+                if value and isinstance(value[0], dict):
+                    self.add_document_structure(item, value[0])
+            else:
+                value_type = type(value).__name__
+                QTreeWidgetItem(parent, [f"{key}: {value_type}"])
 
-        self.table.resizeColumnsToContents()
+    def setup_tabs(self):
+        """탭 설정"""
+        # Users 탭
+        users_tab = QWidget()
+        users_layout = QVBoxLayout(users_tab)
+        
+        # 사용자 검색
+        search_layout = QHBoxLayout()
+        search_layout.addWidget(QLabel("Search:"))
+        self.user_search = QLineEdit()
+        self.user_search.textChanged.connect(lambda: self.filter_data('users'))
+        search_layout.addWidget(self.user_search)
+        users_layout.addLayout(search_layout)
+        
+        # 사용자 목록
+        self.users_tree = QTreeWidget()
+        self.users_tree.setHeaderLabels(["Email", "Name", "Membership", "Credits"])
+        users_layout.addWidget(self.users_tree)
+        
+        self.tab_widget.addTab(users_tab, "Users")
+        
+        # Markets 탭
+        markets_tab = self.setup_markets_tab()
+        self.tab_widget.addTab(markets_tab, "Markets")
+        
+        # Products 탭
+        products_tab = self.setup_products_tab()
+        self.tab_widget.addTab(products_tab, "Products")
 
-    def apply_filter(self):
-        filter_text = self.filter_input.text().lower()
-        filtered_df = self.df[self.df.astype(str).apply(lambda x: x.str.contains(filter_text, case=False)).any(axis=1)]
-        self.update_table(filtered_df)
+    def setup_markets_tab(self):
+        """마켓 탭 설정"""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        
+        # 검색 및 필터
+        filter_layout = QHBoxLayout()
+        filter_layout.addWidget(QLabel("Search:"))
+        self.market_search = QLineEdit()
+        self.market_search.textChanged.connect(lambda: self.filter_data('markets'))
+        filter_layout.addWidget(self.market_search)
+        layout.addLayout(filter_layout)
+        
+        # 마켓 트리
+        self.markets_tree = QTreeWidget()
+        self.markets_tree.setHeaderLabels([
+            "Market Name", "Grade", "Customer Count", 
+            "Male Ratio", "Female Ratio", "URL"
+        ])
+        layout.addWidget(self.markets_tree)
+        
+        return tab
 
-    def refresh_data(self):
-        self.load_data(self.source_combo.currentText())
+    def setup_products_tab(self):
+        """상품 탭 설정"""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        
+        # 검색 및 필터
+        filter_layout = QHBoxLayout()
+        filter_layout.addWidget(QLabel("Search:"))
+        self.product_search = QLineEdit()
+        self.product_search.textChanged.connect(lambda: self.filter_data('products'))
+        filter_layout.addWidget(self.product_search)
+        layout.addLayout(filter_layout)
+        
+        # 상품 트리
+        self.products_tree = QTreeWidget()
+        self.products_tree.setHeaderLabels([
+            "Title", "Price", "Market", "Collection Date",
+            "Reviews", "Purchases"
+        ])
+        layout.addWidget(self.products_tree)
+        
+        return tab
 
-    def export_to_csv(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Save CSV", "", "CSV Files (*.csv)")
-        if path:
-            try:
-                self.df.to_csv(path, index=False)
-                QMessageBox.information(self, "Export Successful", f"Data exported to {path}")
-            except Exception as e:
-                QMessageBox.critical(self, "Export Failed", f"Failed to export data: {str(e)}")
-
-    def upload_template(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Excel Template", "", "Excel Files (*.xlsx)")
-        if file_path:
-            try:
-                wb = load_workbook(filename=file_path)
-                stream = io.BytesIO()
-                wb.save(stream)
-                stream.seek(0)
+    def load_data(self):
+        """데이터 로드"""
+        try:
+            # Users 데이터
+            users = self.db.users.find()
+            for user in users:
+                user_info = user.get('user_info', {})
+                item = QTreeWidgetItem(self.users_tree)
+                item.setText(0, user_info.get('email', ''))
+                item.setText(1, user_info.get('name', ''))
+                item.setText(2, user_info.get('membershipLevel', ''))
+                item.setText(3, str(user_info.get('remainingCredits', 0)))
+            
+            # Markets 데이터
+            markets = self.db.users.aggregate([
+                {"$unwind": "$collected_markets"},
+                {"$project": {"market": "$collected_markets"}}
+            ])
+            
+            for market_doc in markets:
+                market = market_doc.get('market', {})
+                item = QTreeWidgetItem(self.markets_tree)
+                item.setText(0, market.get('mallName', ''))
+                item.setText(1, market.get('mallGrade', ''))
+                item.setText(2, str(market.get('customerCount', 0)))
+                item.setText(3, f"{market.get('genderRatio', {}).get('male', 0)}%")
+                item.setText(4, f"{market.get('genderRatio', {}).get('female', 0)}%")
+                item.setText(5, market.get('mallUrl', ''))
+            
+            # Products 데이터
+            products = self.db.users.aggregate([
+                {"$unwind": "$collected_products"},
+                {"$project": {"product": "$collected_products"}}
+            ])
+            
+            for product_doc in products:
+                product = product_doc.get('product', {})
+                item = QTreeWidgetItem(self.products_tree)
+                item.setText(0, product.get('title', ''))
+                item.setText(1, f"{product.get('price', 0):,}원")
+                item.setText(2, product.get('mall_name', ''))
+                item.setText(3, product.get('collection_date', '').split('T')[0])
+                item.setText(4, str(product.get('review_count', 0)))
+                item.setText(5, str(product.get('purchase_count', 0)))
                 
-                template_data = {
-                    "name": "heyseller_template",
-                    "content": stream.getvalue()
-                }
-                mongo_db.templates.update_one(
-                    {"name": "heyseller_template"},
-                    {"$set": template_data},
-                    upsert=True
-                )
-                QMessageBox.information(self, "Upload Successful", "헤이셀러 템플릿이 성공적으로 업로드되었습니다.")
-            except Exception as e:
-                QMessageBox.critical(self, "Upload Failed", f"템플릿 업로드 중 오류 발생: {str(e)}")
-
-    def sync_databases(self):
-        try:
-            sync_data()
-            QMessageBox.information(self, "Sync Successful", "데이터베이스 동기화가 완료되었습니다.")
-            self.refresh_data()
         except Exception as e:
-            QMessageBox.critical(self, "Sync Failed", f"데이터베이스 동기화 중 오류 발생: {str(e)}")
+            print(f"데이터 로드 실패: {str(e)}")
+
+    def filter_data(self, tab_name):
+        """데이터 필터링"""
+        search_text = ''
+        tree = None
+        
+        if tab_name == 'users':
+            search_text = self.user_search.text().lower()
+            tree = self.users_tree
+        elif tab_name == 'markets':
+            search_text = self.market_search.text().lower()
+            tree = self.markets_tree
+        elif tab_name == 'products':
+            search_text = self.product_search.text().lower()
+            tree = self.products_tree
+            
+        if tree:
+            for i in range(tree.topLevelItemCount()):
+                item = tree.topLevelItem(i)
+                show = False
+                for j in range(tree.columnCount()):
+                    if search_text in item.text(j).lower():
+                        show = True
+                        break
+                item.setHidden(not show)
 
 def main():
-    # 모든 Firebase 사용자에 대해 MongoDB 데이터 생성
-    for user in firebase_users:
-        create_user(user['uid'], user['email'])
-
     app = QApplication(sys.argv)
-    window = DatabaseManager()
+    window = MongoDBManager()
     window.show()
     sys.exit(app.exec())
 
