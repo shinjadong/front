@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// ngrok URL 설정
-const API_BASE_URL = 'https://db705ff68777754c.ngrok.app';
+// 고정 ngrok URL 사용
+const API_BASE_URL = 'https://moray-leading-jolly.ngrok-free.app';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -14,6 +14,7 @@ const api = axios.create({
 // 요청 인터셉터
 api.interceptors.request.use(
     (config) => {
+        // CORS 관련 설정
         config.withCredentials = false;
         return config;
     },
@@ -27,6 +28,9 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         console.error('API Error:', error);
+        if (error.response) {
+            console.error('Error Response:', error.response.data);
+        }
         return Promise.reject(error);
     }
 );
@@ -45,16 +49,24 @@ api.interceptors.request.use(
 // 기본 API 함수들
 export const signup = async (email, password, name) => {
     try {
-        console.log('Sending signup request:', { email, name });
+        console.log('Sending signup request to:', API_BASE_URL + '/signup');
+        console.log('Request data:', { email, name });
+        
         const response = await api.post('/signup', {
             email,
             password,
             name
         });
+        
         console.log('Signup response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('Signup error details:', error.response || error);
+        console.error('Signup error:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+            headers: error.response?.headers
+        });
         throw error;
     }
 };
@@ -81,14 +93,16 @@ export const getUserInfo = async () => {
 };
 
 // 검색 및 수집 관련 API
-export const searchProducts = async (keyword) => {
-    const uid = localStorage.getItem('uid');
+export const searchProducts = async (keyword, uid) => {
     try {
-        const response = await api.post('/search', { keyword, uid });
+        const response = await axios.post(`${API_BASE_URL}/search`, {
+            keyword,
+            uid
+        });
         return response.data;
     } catch (error) {
-        console.error('Search error:', error.response || error);
-        throw error;
+        console.error('API Error:', error);
+        throw error.response?.data || error;
     }
 };
 
