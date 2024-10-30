@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// 고정 ngrok URL 사용
 const API_BASE_URL = 'https://moray-leading-jolly.ngrok-free.app';
 
 const api = axios.create({
@@ -21,7 +20,6 @@ api.interceptors.request.use(
             config.headers['Authorization'] = `Bearer ${token}`;
         }
         if (uid) {
-            // URL에 uid가 없는 경우에만 추가
             if (!config.url.includes('uid=')) {
                 config.url += (config.url.includes('?') ? '&' : '?') + `uid=${uid}`;
             }
@@ -41,12 +39,10 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
         
-        // 토큰 만료 에러인 경우
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
             
             try {
-                // 로컬 스토리지에서 리프레시 토큰 가져오기
                 const refreshToken = localStorage.getItem('refreshToken');
                 if (!refreshToken) {
                     throw new Error('No refresh token');
@@ -59,17 +55,14 @@ api.interceptors.response.use(
                 
                 const { token, newRefreshToken } = response.data;
                 
-                // 새 토큰 저장
                 localStorage.setItem('token', token);
                 localStorage.setItem('refreshToken', newRefreshToken);
                 
-                // 헤더 업데이트
                 api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                 originalRequest.headers['Authorization'] = `Bearer ${token}`;
                 
                 return api(originalRequest);
             } catch (refreshError) {
-                // 리프레시 실패 시 자동 로그인 시도
                 try {
                     const savedCredentials = JSON.parse(localStorage.getItem('userCredentials'));
                     if (savedCredentials) {
@@ -95,38 +88,13 @@ api.interceptors.response.use(
     }
 );
 
-// 요청 인터셉터
-api.interceptors.request.use(
-    (config) => {
-        config.withCredentials = false;
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
-
-// 기본 API 함수들
+// 인증 관련 API
 export const signup = async (email, password, name) => {
     try {
-        console.log('Sending signup request to:', API_BASE_URL + '/signup');
-        console.log('Request data:', { email, name });
-        
-        const response = await api.post('/signup', {
-            email,
-            password,
-            name
-        });
-        
-        console.log('Signup response:', response.data);
+        const response = await api.post('/signup', { email, password, name });
         return response.data;
     } catch (error) {
-        console.error('Signup error:', {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status,
-            headers: error.response?.headers
-        });
+        console.error('Signup error:', error);
         throw error;
     }
 };
@@ -145,7 +113,7 @@ export const login = async (email, password) => {
         
         return response.data;
     } catch (error) {
-        console.error('Login error:', error.response || error);
+        console.error('Login error:', error);
         throw error;
     }
 };
@@ -156,59 +124,108 @@ export const getUserInfo = async () => {
         const response = await api.get(`/user-info?uid=${uid}`);
         return response.data;
     } catch (error) {
-        console.error('Get user info error:', error.response || error);
+        console.error('Get user info error:', error);
         throw error;
     }
 };
 
-// 검색 및 수집 관련 API
-export const searchProducts = async (keyword, uid) => {
+// 통합된 collectProducts 함수
+export const collectProducts = async (uid, productIds, type = 'market') => {
     try {
-        const response = await axios.post(`${API_BASE_URL}/search`, {
-            keyword,
-            uid
+        const endpoint = type === 'market' ? '/collect_selected_products' : '/collect';
+        const response = await api.post(endpoint, {
+            uid,
+            product_ids: productIds,
+            type
         });
         return response.data;
     } catch (error) {
-        console.error('API Error:', error);
-        throw error.response?.data || error;
+        console.error('Collect products error:', error);
+        throw error;
     }
 };
 
-export const collectProducts = async (selectedProductIds) => {
+// 마켓 관련 API
+export const getMarketDB = async (uid) => {
+    try {
+        const response = await api.get(`/get_market_db?uid=${uid}`);
+        return response.data;
+    } catch (error) {
+        console.error('Get market DB error:', error);
+        throw error;
+    }
+};
+
+export const addMarket = async (uid, marketData) => {
+    try {
+        const response = await api.post('/add_market', { uid, marketData });
+        return response.data;
+    } catch (error) {
+        console.error('Add market error:', error);
+        throw error;
+    }
+};
+
+export const updateMarket = async (uid, marketId, marketData) => {
+    try {
+        const response = await api.put('/update_market', { uid, marketId, marketData });
+        return response.data;
+    } catch (error) {
+        console.error('Update market error:', error);
+        throw error;
+    }
+};
+
+export const deleteMarket = async (uid, marketId) => {
+    try {
+        const response = await api.delete('/delete_market', { data: { uid, marketId } });
+        return response.data;
+    } catch (error) {
+        console.error('Delete market error:', error);
+        throw error;
+    }
+};
+
+export const reverseMarket = async (uid, marketId) => {
+    try {
+        const response = await api.post('/market_reversing', { uid, marketIds: [marketId] });
+        return response.data;
+    } catch (error) {
+        console.error('Reverse market error:', error);
+        throw error;
+    }
+};
+
+// 기타 API 함수들...
+export const searchProducts = async (keyword) => {
     const uid = localStorage.getItem('uid');
     try {
-        const response = await api.post('/collect', {
-            uid,
-            selected_product_ids: selectedProductIds
-        });
+        const response = await api.post('/search', { keyword, uid });
         return response.data;
     } catch (error) {
-        console.error('Collect products error:', error.response || error);
+        console.error('Search products error:', error);
         throw error;
     }
 };
 
-// 수집된 상품 관련 API
 export const getCollectedProducts = async () => {
     const uid = localStorage.getItem('uid');
     try {
         const response = await api.get(`/get_collected_products?uid=${uid}`);
         return response.data;
     } catch (error) {
-        console.error('Get collected products error:', error.response || error);
+        console.error('Get collected products error:', error);
         throw error;
     }
 };
 
-// 타오바오 관련 API
 export const matchTaobaoProduct = async (imageUrl) => {
     const uid = localStorage.getItem('uid');
     try {
         const response = await api.post('/taobao_match', { image_url: imageUrl, uid });
         return response.data;
     } catch (error) {
-        console.error('Taobao match error:', error.response || error);
+        console.error('Taobao match error:', error);
         throw error;
     }
 };
@@ -219,12 +236,11 @@ export const batchTaobaoMatch = async (productIds) => {
         const response = await api.post('/batch_taobao_match', { uid, productIds });
         return response.data;
     } catch (error) {
-        console.error('Batch taobao match error:', error.response || error);
+        console.error('Batch taobao match error:', error);
         throw error;
     }
 };
 
-// 헤이셀러 관련 API
 export const downloadHeySeller = async () => {
     const uid = localStorage.getItem('uid');
     try {
@@ -233,67 +249,20 @@ export const downloadHeySeller = async () => {
         });
         return response.data;
     } catch (error) {
-        console.error('Download heyseller error:', error.response || error);
+        console.error('Download heyseller error:', error);
         throw error;
     }
 };
 
-// SEO 관련 API
 export const generateSEO = async (productId) => {
     const uid = localStorage.getItem('uid');
     try {
         const response = await api.post('/generate_seo', { uid, product_id: productId });
         return response.data;
     } catch (error) {
-        console.error('Generate SEO error:', error.response || error);
+        console.error('Generate SEO error:', error);
         throw error;
     }
-};
-
-// 마켓 DB 조회
-export const getMarketDB = async (uid) => {
-  try {
-    const response = await api.get(`/get_market_db?uid=${uid}`);
-    return response.data;
-  } catch (error) {
-    console.error('Get market DB error:', error.response || error);
-    throw error;
-  }
-};
-
-// getSellerInfo 함수 추가
-export const getSellerInfo = async (uid, marketId) => {
-  try {
-    const response = await api.get(`/get_seller_info?uid=${uid}&market_id=${marketId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Get seller info error:', error.response || error);
-    throw error;
-  }
-};
-
-// 마켓 리버싱 관련 API 함수 추가
-export const getMarketScrapingResults = async (uid) => {
-  try {
-    const response = await api.get(`/get_scraping_results?uid=${uid}`);
-    return response.data;
-  } catch (error) {
-    console.error('Get market scraping results error:', error.response || error);
-    throw error;
-  }
-};
-
-export const collectSelectedProducts = async (uid, selectedProductIds) => {
-  try {
-    const response = await api.post('/collect_selected_products', {
-      uid,
-      product_ids: selectedProductIds
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Collect selected products error:', error.response || error);
-    throw error;
-  }
 };
 
 export default api;
