@@ -9,8 +9,10 @@ const SellerInfo = ({ marketId }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchSellerInfo();
-  }, [marketId]);
+    if (marketId) {
+      fetchSellerInfo();
+    }
+  }, [marketId, fetchSellerInfo]);
 
   const fetchSellerInfo = async () => {
     try {

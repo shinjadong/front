@@ -1,0 +1,91 @@
+.seller-info {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.info-grid {
+  display: grid;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-item label {
+  font-weight: bold;
+  color: #048777;
+}
+
+.gender-ratio {
+  display: flex;
+  height: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.male {
+  background-color: #78c1ff;
+  color: white;
+  text-align: center;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.female {
+  background-color: #ff6d6d;
+  color: white;
+  text-align: center;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.age-distribution {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 100px;
+}
+
+.age-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 40px;
+}
+
+.bar {
+  width: 20px;
+  background-color: #048777;
+  margin: 5px 0;
+}
+
+.age-label {
+  font-size: 12px;
+}
+
+.ratio {
+  font-size: 12px;
+}
+
+.social-links {
+  display: flex;
+  gap: 10px;
+}
+
+.social-links a {
+  color: #048777;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.social-links a:hover {
+  text-decoration: underline;
+} 
