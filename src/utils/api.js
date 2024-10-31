@@ -132,16 +132,20 @@ export const getUserInfo = async () => {
 // 통합된 collectProducts 함수
 export const collectProducts = async (uid, productIds, type = 'market') => {
     try {
-        const endpoint = type === 'market' ? '/collect_selected_products' : '/collect';
-        const response = await api.post(endpoint, {
+        const response = await api.post('/collect_selected_products', {
             uid,
             product_ids: productIds,
             type
         });
+        
+        if (!response.data) {
+            throw new Error('상품 수집 응답이 없습니다.');
+        }
+        
         return response.data;
     } catch (error) {
         console.error('Collect products error:', error);
-        throw error;
+        throw error.response?.data?.error || '상품 수집 중 오류가 발생했습니다.';
     }
 };
 

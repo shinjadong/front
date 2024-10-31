@@ -19,15 +19,32 @@ function App() {
   useEffect(() => {
     const checkLoginStatus = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
+      const uid = localStorage.getItem('uid');
+      
+      if (token && uid) {
         try {
-          await getUserInfo(); // 유효한 토큰인지 확인
-          setIsLoggedIn(true);
+          const userInfo = await getUserInfo();
+          if (userInfo) {
+            setIsLoggedIn(true);
+            localStorage.setItem('userInfo', JSON.stringify(userInfo));
+          } else {
+            throw new Error('Invalid user info');
+          }
         } catch (error) {
-          console.error('Invalid token:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('uid');
-          localStorage.removeItem('userInfo');
+          console.error('Auth check failed:', error);
+          // 토큰이 만료되었을 때 자동 갱신 시도
+          try {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (refreshToken) {
+              const response = await api.post('/refresh_token', { 
+                refresh_token: refreshToken 
+              });
+              localStorage.setItem('token', response.data.token);
+              setIsLoggedIn(true);
+            }
+          } catch (refreshError) {
+            handleLogout();
+          }
         }
       }
       setLoading(false);
@@ -38,9 +55,8 @@ function App() {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    localStorage.removeItem('token');
-    localStorage.removeItem('uid');
-    localStorage.removeItem('userInfo');
+    localStorage.clear();
+    window.location.href = '/login';
   };
 
   if (loading) {

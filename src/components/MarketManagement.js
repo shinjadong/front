@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getMarketDB, addMarket, deleteMarket, updateMarket, reverseMarket, collectProducts } from '../utils/api';
 import LoadingSpinner from './LoadingSpinner';
 import '../styles/MarketManagement.css';
 
 const MarketManagement = () => {
+  const navigate = useNavigate();
   const [markets, setMarkets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,6 +36,10 @@ const MarketManagement = () => {
   // 마켓 추가
   const handleAddMarket = async (e) => {
     e.preventDefault();
+    if (!newMarket.mallName || !newMarket.mallUrl) {
+      alert('마켓명과 URL을 모두 입력해주세요.');
+      return;
+    }
     try {
       setLoading(true);
       const uid = localStorage.getItem('uid');
@@ -113,12 +119,18 @@ const MarketManagement = () => {
     try {
       setLoading(true);
       const uid = localStorage.getItem('uid');
-      await collectProducts(uid, selectedProducts, 'market');
-      alert('선택한 상품이 수집되었습니다.');
-      setScrapingResults(null);
-      setSelectedProducts([]);
+      const response = await collectProducts(uid, selectedProducts, 'market');
+      
+      if (response) {
+        alert('선택한 상품이 수집되었습니다.');
+        setScrapingResults(null);
+        setSelectedProducts([]);
+        navigate('/collected');
+      }
     } catch (err) {
+      console.error('상품 수집 오류:', err);
       setError(err.message);
+      alert('상품 수집 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -141,12 +153,14 @@ const MarketManagement = () => {
             placeholder="마켓명"
             value={newMarket.mallName}
             onChange={(e) => setNewMarket({...newMarket, mallName: e.target.value})}
+            required
           />
           <input
             type="text"
             placeholder="마켓 URL"
             value={newMarket.mallUrl}
             onChange={(e) => setNewMarket({...newMarket, mallUrl: e.target.value})}
+            required
           />
           <button type="submit">추가</button>
           <button type="button" onClick={() => setShowAddForm(false)}>취소</button>
@@ -201,13 +215,14 @@ const MarketManagement = () => {
 
       {scrapingResults && (
         <div className="scraping-results">
-          <h3>스크래핑 결과</h3>
+          <h3>스크래핑 결과 ({scrapingResults.length}개)</h3>
           <div className="results-controls">
             <button 
               onClick={handleCollectProducts}
               disabled={selectedProducts.length === 0}
+              className="collect-button"
             >
-              선택 상품 수집
+              선택 상품 수집 ({selectedProducts.length})
             </button>
           </div>
           <div className="products-grid">
@@ -216,17 +231,22 @@ const MarketManagement = () => {
                 key={product.id} 
                 className={`product-card ${selectedProducts.includes(product.id) ? 'selected' : ''}`}
               >
-                <input
-                  type="checkbox"
-                  checked={selectedProducts.includes(product.id)}
-                  onChange={() => handleProductSelect(product.id)}
-                />
-                <img src={product.image_url} alt={product.title} />
-                <h4>{product.title}</h4>
-                <p className="price">{product.price.toLocaleString()}원</p>
-                <div className="stats">
-                  <span>리뷰 {product.review_count}</span>
-                  <span>구매 {product.purchase_count}</span>
+                <div className="card-header">
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.includes(product.id)}
+                    onChange={() => handleProductSelect(product.id)}
+                  />
+                  {product.is_best && <span className="best-badge">BEST</span>}
+                </div>
+                <img src={product.image_url} alt={product.title} loading="lazy" />
+                <div className="product-info">
+                  <h4>{product.title}</h4>
+                  <p className="price">{product.price.toLocaleString()}원</p>
+                  <div className="stats">
+                    <span>리뷰 {product.review_count.toLocaleString()}</span>
+                    <span>구매 {product.purchase_count.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
             ))}

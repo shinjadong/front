@@ -29,20 +29,19 @@ const SearchPage = () => {
     }
 
     setLoading(true);
-    setLoadingMessage('상품을 검색하고 있습니다. 잠시만 기다려주세요...');
+    setLoadingMessage('상품을 검색하고 ��습니다. 잠시만 기다려주세요...');
     setError(null);
 
     try {
-      const uid = localStorage.getItem('uid');
-      if (!uid) {
-        throw new Error('로그인이 필요합니다.');
+      const result = await searchProducts(keyword);
+      if (result && result.products) {
+        setSearchResults(result);
+      } else {
+        throw new Error('검색 결과가 없습니다.');
       }
-
-      const result = await searchProducts(keyword, uid);
-      setSearchResults(result);
     } catch (err) {
-      setError(err.message || '검색 중 오류가 발생했습니다.');
       console.error('Search error:', err);
+      setError(err.message || '검색 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
       setLoadingMessage('');
