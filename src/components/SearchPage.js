@@ -29,7 +29,7 @@ const SearchPage = () => {
     }
 
     setLoading(true);
-    setLoadingMessage('상품을 검색하고 ��습니다. 잠시만 기다려주세요...');
+    setLoadingMessage('상품을 검색하고 있습니다. 잠시만 기다려주세요...');
     setError(null);
 
     try {
