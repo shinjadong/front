@@ -9,7 +9,7 @@ import TaobaoMatch from './components/TaobaoMatch';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import MarketManagement from './components/MarketManagement';
-import { getUserInfo } from './utils/api';
+import api from './utils/api';
 import './styles/main.css';
 
 function App() {
@@ -23,34 +23,33 @@ function App() {
       
       if (token && uid) {
         try {
-          const userInfo = await getUserInfo();
-          if (userInfo) {
+          const response = await api.get('/user-info');
+          if (response.data) {
             setIsLoggedIn(true);
-            localStorage.setItem('userInfo', JSON.stringify(userInfo));
-          } else {
-            throw new Error('Invalid user info');
+            localStorage.setItem('userInfo', JSON.stringify(response.data));
           }
         } catch (error) {
           console.error('Auth check failed:', error);
-          // 토큰이 만료되었을 때 자동 갱신 시도
-          try {
-            const refreshToken = localStorage.getItem('refreshToken');
-            if (refreshToken) {
-              const response = await api.post('/refresh_token', { 
-                refresh_token: refreshToken 
-              });
-              localStorage.setItem('token', response.data.token);
-              setIsLoggedIn(true);
-            }
-          } catch (refreshError) {
-            handleLogout();
-          }
+          handleLogout();
         }
       }
       setLoading(false);
     };
 
     checkLoginStatus();
+  }, []);
+
+  useEffect(() => {
+    // API 연결 테스트
+    const testConnection = async () => {
+      try {
+        await api.get('/ping');
+        console.log('API 연결 성공');
+      } catch (error) {
+        console.error('API 연결 실패:', error);
+      }
+    };
+    testConnection();
   }, []);
 
   const handleLogout = () => {

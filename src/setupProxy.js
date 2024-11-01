@@ -4,14 +4,14 @@ module.exports = function(app) {
     app.use(
         '/api',
         createProxyMiddleware({
-            target: 'https://db705ff68777754c.ngrok.app',
+            target: process.env.REACT_APP_API_URL || 'https://moray-leading-jolly.ngrok-free.app',
             changeOrigin: true,
             secure: false,
             pathRewrite: {
                 '^/api': ''
             },
-            onProxyRes: function(proxyRes, req, res) {
-                proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+            onProxyReq: function(proxyReq, req, res) {
+                proxyReq.setHeader('ngrok-skip-browser-warning', 'true');
             }
         })
     );
