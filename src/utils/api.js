@@ -1,13 +1,16 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://moray-leading-jolly.ngrok-free.app';
+// API 기본 URL 설정
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://moray-leading-jolly.ngrok-free.app';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    }
+        'Accept': 'application/json',
+        'ngrok-skip-browser-warning': true  // ngrok 경고 무시
+    },
+    withCredentials: true  // 쿠키 전송 허용
 });
 
 // 요청 인터셉터에서 토큰 자동 추가
