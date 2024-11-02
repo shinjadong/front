@@ -1,12 +1,14 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: process.env.NODE_ENV === 'development' ? '/api' : process.env.REACT_APP_API_URL,
+    baseURL: process.env.NODE_ENV === 'development' 
+        ? '/api' 
+        : process.env.REACT_APP_API_URL,
     headers: {
         'Content-Type': 'application/json',
         'ngrok-skip-browser-warning': 'true'
     },
-    withCredentials: false
+    withCredentials: true
 });
 
 // 요청 인터셉터
